@@ -27,6 +27,80 @@ module Joinme2
       }
     end
 
+
+    # Public: POST the Authorization Code, along with your client credentials, to our /token endpoint.
+    # This must be done from your server--your client_secret should never be exposed to a browser.
+    #
+    # Examples:
+    #
+    #   auth_endpoint("code")
+    #
+    #   "https://secure.join.me/api/public/v1/auth/token"
+    #
+    # Returns a JSON containing access_token + refresh_token.
+    def auth_endpoint(code, options = {})
+      params = {}
+      request = @options.dup
+
+      params[:client_id] = options[:client_id] || client_id
+      params[:client_secret] = options[:client_secret] || client_secret
+      params[:redirect_uri] = options[:redirect_uri] || redirect_uri
+      params[:code] = options[:code] || code
+      params[:grant_type] =  "authorization_code"
+
+      request[:body] = params.to_json
+
+      self.class.post(auth_refresh_token_uri, request)
+    end
+
+    # Public: POST the Authorization Code, along with your client credentials, to our /token endpoint.
+    # This must be done from your server--your client_secret should never be exposed to a browser.
+    #
+    # Examples:
+    #
+    #   refresh_endpoint("refresh_token")
+    #
+    #   "https://secure.join.me/api/public/v1/auth/token"
+    #
+    # Returns a JSON containing access_token + refresh_token.
+    def refresh_endpoint(refresh_token, options = {})
+      params = {}
+      request = @options.dup
+
+      params[:client_id] = options[:client_id] || client_id
+      params[:client_secret] = options[:client_secret] || client_secret
+      params[:refresh_token] = options[:refresh_token] || refresh_token
+      params[:grant_type] =  "refresh_token"
+
+      request[:body] = params.to_json
+
+      self.class.post(auth_refresh_token_uri, request)
+    end
+
+    # Public: Generates Joinme authorization url based on client_id, auth_uri
+    # redirect_uri and scopes. Redirect URI has to match configured Joinme
+    # Application callback URL.
+    #
+    # Examples:
+    #
+    #   authorize_code_url(redirect_uri: 'http://example.com/',
+    #                      scope: "user_info scheduler start_meeting",
+    #                      client_id: "XXXXX")
+    #   # =>
+    #   "https://secure.join.me/api/public/v1/auth/oauth2..."
+    #
+    # Returns authorization url as a string.
+    def authorize_code_url(options = {})
+      params = {}
+      params[:scope] = options[:scope] || default_scopes
+      params[:redirect_uri] = options[:redirect_uri] || redirect_uri
+      params[:client_id] = options[:client_id] || client_id
+      params[:response_type] = 'code'
+      URI.parse(auth_uri).tap do |uri|
+        uri.query = URI.encode_www_form params
+      end.to_s
+    end
+
     # Public: Generates Joinme authorization url based on client_id, auth_uri
     # redirect_uri and scopes. Redirect URI has to match configured Joinme
     # Application callback URL.
